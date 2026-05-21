@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Based Career Recommendation System for IT Students</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        /* Color Palette & Global Variables from Client 2 Reference */
+        :root {
+            --primary-blue: #1a237e;
+            --dark-blue: #0d1253;
+            --light-blue: #448aff;
+            --white-color: #ffffff;
+            --grey-color: #e0e0e0;
+            --glass-bg: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-hover: rgba(255, 255, 255, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--dark-blue);
+            color: var(--white-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        /* Responsive Global Layout Container */
+        .app-container {
+            width: 100%;
+            max-width: 1200px;
+            min-height: 650px;
+            background-color: var(--primary-blue);
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            display: flex;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Routing Section Core Display Configurations */
+        .page-view {
+            display: none;
+            width: 100%;
+            animation: fadeIn 0.6s ease forwards;
+        }
+
+        .page-view.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Left Side Split Branding/Information Panels */
+        .branding-panel {
+            flex: 1;
+            background: linear-gradient(135deg, var(--primary-blue), #151c66);
+            padding: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border-right: 1px solid var(--glass-border);
+        }
+
+        .branding-panel h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffffff, #b3d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .branding-panel p {
+            font-size: 1rem;
+            color: var(--grey-color);
+            max-width: 380px;
+            line-height: 1.6;
+        }
+
+        /* Right Side Split Form Interactivity Workspace */
+        .workspace-panel {
+            flex: 1;
+            background-color: var(--dark-blue);
+            padding: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow-y: auto;
+        }
+
+        .workspace-panel h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        /* Glassmorphism Input & Control Structures */
+        .input-wrapper {
+            margin-bottom: 22px;
+            width: 100%;
+        }
+
+        .input-wrapper label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            color: var(--grey-color);
+            font-weight: 500;
+        }
+
+        .input-wrapper input[type="text"],
+        .input-wrapper input[type="email"],
+        .input-wrapper input[type="number"],
+        .input-wrapper select {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            background: var(--glass-bg);
+            color: var(--white-color);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .input-wrapper input:focus,
+        .input-wrapper select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--light-blue);
+            box-shadow: 0 0 0 3px rgba(68, 138, 255, 0.25);
+        }
+
+        .input-wrapper select option {
+            background-color: var(--dark-blue);
+            color: var(--white-color);
+        }
+
+        /* Glassmorphic Checkbox Matrix Config */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 5px;
+        }
+
+        .checkbox-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-card:hover {
+            background: var(--glass-hover);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .checkbox-card input[type="checkbox"] {
+            margin-right: 12px;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--light-blue);
+            cursor: pointer;
+        }
+
+        .checkbox-card span {
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+
+        /* Button Mechanics */
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            background-color: var(--light-blue);
+            color: var(--white-color);
+            font-size: 1.1rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 15px;
+            box-shadow: 0 4px 15px rgba(68, 138, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            background-color: #3b7ae6;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(68, 138, 255, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* Page 3: AI Engine Loading Micro-Interactions */
+        .ai-processing-view {
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            text-align: center;
+        }
+
+        .spinner-box {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 35px;
+        }
+
+        .circle-loader {
+            width: 80px;
+            height: 80px;
+            border: 4px solid rgba(255, 255, 255, 0.05);
+            border-top: 4px solid var(--light-blue);
+            border-bottom: 4px solid var(--light-blue);
+            border-radius: 50%;
+            animation: spin 1.5s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+
+        .pulse-core {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #ff4081;
+            border-radius: 50%;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+
+        .ai-processing-view h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .ai-processing-view p {
+            color: var(--grey-color);
+            font-size: 1.1rem;
+            animation: pulseText 2s ease infinite;
+        }
+
+        @keyframes pulseText {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* Page 4: Advanced Recommendation Dashboard Workspace */
+        .dashboard-view {
+            flex-direction: column;
+            padding: 40px;
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+
+        .dashboard-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-topbar h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .student-badge {
+            font-size: 0.9rem;
+            color: var(--grey-color);
+            display: block;
+            margin-top: 4px;
+        }
+
+        .btn-reset {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--white-color);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-reset:hover {
+            background: var(--glass-bg);
+            border-color: var(--white-color);
+        }
+
+        /* Metrics Glass Card Grid Architecture */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 25px;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-7 { grid-column: span 7; }
+        .col-5 { grid-column: span 5; }
+        .col-6 { grid-column: span 6; }
+
+        .glass-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 18px;
+            color: #b3d4ff;
+            border-left: 3px solid var(--light-blue);
+            padding-left: 10px;
+        }
+
+        /* Top 3 Career Layout Components */
+        .career-rank-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .rank-card {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 16px 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rank-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+        }
+
+        .rank-1::before { background-color: #00e676; }
+        .rank-2::before { background-color: #00b0ff; }
+        .rank-3::before { background-color: #ff9100; }
+
+        .rank-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 20px;
+        }
+
+        .rank-details {
+            flex: 1;
+        }
+
+        .rank-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .rank-percentage {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #00e676;
+        }
+
+        .rank-2 .rank-percentage { color: #00b0ff; }
+        .rank-3 .rank-percentage { color: #ff9100; }
+
+        /* Reason and Gap Text Panels */
+        .narrative-box {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+        }
+
+        .narrative-box p {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--grey-color);
+        }
+
+        .narrative-list {
+            margin-top: 10px;
+            padding-left: 20px;
+        }
+
+        .narrative-list li {
+            font-size: 0.95rem;
+            color: var(--white-color);
+            margin-bottom: 6px;
+            line-height: 1.5;
+        }
+
+        /* Chart Canvas Size Boundaries */
+        .chart-box {
+            position: relative;
+            width: 100%;
+            height: 260px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Responsive Breakpoints Rules */
+        @media (max-width: 992px) {
+            .col-7, .col-5, .col-6 { grid-column: span 12; }
+            .app-container { flex-direction: column; width: 100%; }
+            .branding-panel { border-right: none; border-bottom: 1px solid var(--glass-border); padding: 40px; }
+            .workspace-panel { padding: 40px; }
+        }
+
+        @media (max-width: 600px) {
+            .skills-grid { grid-template-columns: 1fr; }
+            .dashboard-view { padding: 20px; }
+            .glass-card { padding: 18px; }
+            .dashboard-topbar { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .btn-reset { width: 100%; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container" id="containerWindow">
+        
+        <div id="page1" class="page-view active">
+            <div class="branding-panel">
+                <h1>AI-Based Career Recommendation System</h1>
+                <p>An intelligent assessment framework designed to map structural skill vectors against industrial IT job parameters.</p>
+            </div>
+            <div class="workspace-panel">
+                <h2>Student Login</h2>
+                <form id="loginForm" onsubmit="transitionToPage2(event)">
+                    <div class="input-wrapper">
+                        <label for="fullName">Full Name</label>
+                        <input type="text" id="fullName" placeholder="Enter your full name" required>
+                    </div>
+                    <div class="input-wrapper">
+                        <label for="emailAddr">Email Address</label>
+                        <input type="email" id="emailAddr" placeholder="name@university.edu" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Authenticate Identity</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="page2" class="page-view">
+            <div class="branding-panel">
+                <h1>Profile Configuration</h1>
+                <p>Provide your current qualifications, marks parameters, and core technical proficiencies to initialize processing logic.</p>
+            </div>
+            <div class="workspace-panel">
+                <h2>Academic Credentials</h2>
+                <form id="profileForm" onsubmit="runAIEngineProcessing(event)">
+                    
+                    <div class="input-wrapper">
+                        <label for="qualification">Qualification Degree Track</label>
+                        <select id="qualification" required>
+                            <option value="">-- Choose Qualification --</option>
+                            <option value="12th Non-Medical">12th Non-Medical</option>
+                            <option value="BCA">BCA</option>
+                            <option value="BSc IT">BSc IT</option>
+                            <option value="BTech">BTech</option>
+                            <option value="MCA">MCA</option>
+                        </select>
+                    </div>
+
+                    <div class="input-wrapper">
+                        <label for="academicMarks">Academic Performance Score (%)</label>
+                        <input type="number" id="academicMarks" min="0" max="100" placeholder="Enter combined percentage (e.g. 82)" required>
+                    </div>
+
+                    <div class="input-wrapper">
+                        <label>Core Technical & Soft Skills Mastery</label>
+                        <div class="skills-grid">
+                            <label class="checkbox-card"><input type="checkbox" class="skill-checkbox" value="Python"><span>Python</span></label>
+                            <label class="checkbox-card"><input type="checkbox" class="skill-checkbox" value="Java"><span>Java</span></label>
+                            <label class="checkbox-card"><input type="checkbox" class="skill-checkbox" value="HTML/CSS"><span>HTML/CSS</span></label>
+                            <label class="checkbox-card"><input type="checkbox" class="skill-checkbox" value="JavaScript"><span>JavaScript</span></label>
+                            <label class="checkbox-card"><input type="checkbox" class="skill-checkbox" value="SQL"><span>SQL</span></label>
+                            <label class="checkbox-card"><input type="checkbox" class="skill-checkbox" value="Data Analytics"><span>Data Analytics</span></label>
+                            <label class="checkbox-card"><input type="checkbox" class="skill-checkbox" value="UI/UX Design"><span>UI/UX Design</span></label>
+                            <label class="checkbox-card"><input type="checkbox" class="skill-checkbox" value="Networking"><span>Networking</span></label>
+                            <label class="checkbox-card"><input type="checkbox" class="skill-checkbox" value="Cyber Security"><span>Cyber Security</span></label>
+                            <label class="checkbox-card"><input type="checkbox" class="skill-checkbox" value="Communication Skills"><span>Communication</span></label>
+                            <label class="checkbox-card"><input type="checkbox" class="skill-checkbox" value="Problem Solving"><span>Problem Solving</span></label>
+                            <label class="checkbox-card"><input type="checkbox" class="skill-checkbox" value="Canva"><span>Canva</span></label>
+                            <label class="checkbox-card"><input type="checkbox" class="skill-checkbox" value="AI/ML Basics"><span>AI/ML Basics</span></label>
+                        </div>
+                    </div>
+
+                    <div class="input-wrapper">
+                        <label for="interestArea">Primary Analytical Interest Area</label>
+                        <select id="interestArea" required>
+                            <option value="">-- Choose Vocation Domain --</option>
+                            <option value="Development">Development</option>
+                            <option value="Data Science">Data Science</option>
+                            <option value="Design">Design</option>
+                            <option value="Security">Security</option>
+                            <option value="Management">Management</option>
+                            <option value="Artificial Intelligence">Artificial Intelligence</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-primary">Generate Recommendations</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="page3" class="page-view ai-processing-view">
+            <div class="spinner-box">
+                <div class="circle-loader"></div>
+                <div class="pulse-core"></div>
+            </div>
+            <h2>Analyzing Student Profile...</h2>
+            <p>Generating AI-based career recommendations...</p>
+        </div>
+
+        <div id="page4" class="page-view dashboard-view">
+            
+            <div class="dashboard-topbar">
+                <div>
+                    <h2 id="dashStudentName">Evaluation Metrics</h2>
+                    <span class="student-badge" id="dashStudentMeta"></span>
+                </div>
+                <button class="btn-reset" onclick="resetSystemWorkflow()">Evaluate New Profile</button>
+            </div>
+
+            <div class="dashboard-grid">
+                
+                <div class="glass-card col-7">
+                    <h3>Top Career Recommendations</h3>
+                    <div class="career-rank-list">
+                        
+                        <div class="rank-card rank-1">
+                            <div class="rank-number">1</div>
+                            <div class="rank-details">
+                                <div class="rank-title" id="career1Title">Determining Max Path...</div>
+                                <div style="font-size: 0.85rem; color: var(--grey-color);">Primary Alignment</div>
+                            </div>
+                            <div class="rank-percentage" id="career1Pct">--%</div>
+                        </div>
+
+                        <div class="rank-card rank-2">
+                            <div class="rank-number">2</div>
+                            <div class="rank-details">
+                                <div class="rank-title" id="career2Title">Calculating...</div>
+                                <div style="font-size: 0.85rem; color: var(--grey-color);">Secondary Alignment</div>
+                            </div>
+                            <div class="rank-percentage" id="career2Pct">--%</div>
+                        </div>
+
+                        <div class="rank-card rank-3">
+                            <div class="rank-number">3</div>
+                            <div class="rank-details">
+                                <div class="rank-title" id="career3Title">Calculating...</div>
+                                <div style="font-size: 0.85rem; color: var(--grey-color);">Tertiary Alignment</div>
+                            </div>
+                            <div class="rank-percentage" id="career3Pct">--%</div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="glass-card col-5">
+                    <h3>Recommendation Diagnostics</h3>
+                    <div class="narrative-box">
+                        <p id="explanationText">AI context text dynamically rendering baseline constraints mapping variables...</p>
+                        <ul class="narrative-list" id="explanationList">
+                            </ul>
+                    </div>
+                </div>
+
+                <div class="glass-card col-6">
+                    <h3>Skill Distribution Vector</h3>
+                    <div class="chart-box">
+                        <canvas id="doughnutChartObj"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-card col-6">
+                    <h3>Career Match Probability Analysis (%)</h3>
+                    <div class="chart-box">
+                        <canvas id="barChartObj"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-card col-12">
+                    <h3>Vocation Gap & Professional Remediation Roadmaps</h3>
+                    <div class="narrative-box" style="border-left: 4px solid #ff4081;">
+                        <p style="font-weight: 500; margin-bottom: 5px; color: #ff4081;">Identified Deficiencies & Growth Vector Focus Points:</p>
+                        <ul class="narrative-list" id="skillGapList">
+                            </ul>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        // Global variables state storage structure holding session matrices
+        let sessionProfile = {
+            name: "",
+            email: "",
+            qualification: "",
+            marks: 0,
+            skills: [],
+            interest: ""
+        };
+
+        // References to current chart instances to avoid canvas lifecycle overhead crashes
+        let chartDoughnutInstance = null;
+        let chartBarInstance = null;
+
+        /**
+         * Global View Router Utility Handler
+         */
+        function switchView(targetPageId) {
+            document.querySelectorAll('.page-view').forEach(view => {
+                view.classList.remove('active');
+            });
+            document.getElementById(targetPageId).classList.add('active');
+
+            // Automatically optimize structural boundaries of presentation container based on view modes
+            const container = document.getElementById('containerWindow');
+            if (targetPageId === 'page4') {
+                container.style.maxWidth = "1250px";
+                container.style.width = "95%";
+            } else {
+                container.style.maxWidth = "1200px";
+                container.style.width = "85%";
+            }
+        }
+
+        /**
+         * Page 1 Router Transition Validation Form Handler
+         */
+        function transitionToPage2(event) {
+            event.preventDefault();
+            const nameField = document.getElementById('fullName').value.trim();
+            const emailField = document.getElementById('emailAddr').value.trim();
+
+            if (!nameField || !emailField) {
+                alert("Validation Fault: Ensure registration credential items are populated.");
+                return;
+            }
+
+            sessionProfile.name = nameField;
+            sessionProfile.email = emailField;
+
+            switchView('page2');
+        }
+
+        /**
+         * Page 2 Execution Input Logic Core Processing Matrix
+         */
+        function runAIEngineProcessing(event) {
+            event.preventDefault();
+
+            const qualSelect = document.getElementById('qualification').value;
+            const marksInput = document.getElementById('academicMarks').value;
+            const interestSelect = document.getElementById('interestArea').value;
+
+            // Extract values of array structure matching checked attributes
+            const selectedSkillsArray = [];
+            document.querySelectorAll('.skill-checkbox:checked').forEach(box => {
+                selectedSkillsArray.push(box.value);
+            });
+
+            if (!qualSelect || !marksInput || !interestSelect) {
+                alert("Validation Fault: Complete selection items for all dropdown structural options.");
+                return;
+            }
+
+            // Sync structured storage configuration 
+            sessionProfile.qualification = qualSelect;
+            sessionProfile.marks = parseFloat(marksInput);
+            sessionProfile.interest = interestSelect;
+            sessionProfile.skills = selectedSkillsArray;
+
+            // Route to Page 3 processing simulation module
+            switchView('page3');
+
+            // Fixed delay timer to simulate machine deep analytics modeling mechanics
+            setTimeout(() => {
+                computeSystemMetrics();
+                switchView('page4');
+            }, 2500);
+        }
+
+        /**
+         * Rule-Based Frontend AI Classifier Algorithm Calculation Logic
+         */
+        function computeSystemMetrics() {
+            // Update Dashboard Identity Nodes
+            document.getElementById('dashStudentName').innerText = `${sessionProfile.name}'s Profile Diagnosis`;
+            document.getElementById('dashStudentMeta').innerText = `Tracked Track: ${sessionProfile.qualification} | Academic Weight: ${sessionProfile.marks}% | Context ID: ${sessionProfile.email}`;
+
+            // Initialize 4-Quadrant Strengths Scoring Vectors
+            let strengths = { programming: 15, analytics: 15, design: 15, communication: 15 };
+
+            // Calculate impact of academic values baseline on skill quadrants
+            const marksFactor = sessionProfile.marks * 0.3;
+            strengths.programming += Math.round(marksFactor * 1.1);
+            strengths.analytics += Math.round(marksFactor * 1.0);
+            strengths.design += Math.round(marksFactor * 0.8);
+            strengths.communication += Math.round(marksFactor * 0.9);
+
+            // Calculate skill-based vector points based on checkboxes
+            sessionProfile.skills.forEach(skill => {
+                if (['Python', 'Java', 'JavaScript'].includes(skill)) strengths.programming += 20;
+                if (['SQL', 'Data Analytics', 'AI/ML Basics'].includes(skill)) strengths.analytics += 20;
+                if (['HTML/CSS', 'UI/UX Design', 'Canva'].includes(skill)) strengths.design += 20;
+                if (['Networking', 'Cyber Security', 'Problem Solving', 'Communication Skills'].includes(skill)) strengths.communication += 15;
+            });
+
+            // Adjust values if certain vocational choices match interest inputs
+            if (sessionProfile.interest === "Development") strengths.programming += 25;
+            if (sessionProfile.interest === "Data Science") strengths.analytics += 25;
+            if (sessionProfile.interest === "Artificial Intelligence") { strengths.programming += 20; strengths.analytics += 20; }
+            if (sessionProfile.interest === "Design") strengths.design += 25;
+            if (sessionProfile.interest === "Security") strengths.analytics += 15; strengths.communication += 15;
+            if (sessionProfile.interest === "Management") strengths.communication += 25;
+
+            // Absolute ceiling bounds normalization protection
+            Object.keys(strengths).forEach(k => { if (strengths[k] > 100) strengths[k] = 100; });
+
+            // Initialize career path correlation tracking arrays
+            let baselineCareers = [
+                { name: "Software Developer", score: 20, reason: "Solid core programming foundation and logical building structures.", gaps: ["Advanced System Architectures", "Microservices Design Architecture", "Enterprise Scalability Concepts"] },
+                { name: "Data Analyst", score: 20, reason: "Good analytics vectors, database understanding, and information synthesis loops.", gaps: ["Advanced Tableau / PowerBI Engineering", "Statistical Hypothesis Testing", "Advanced Excel Pivot Automations"] },
+                { name: "Machine Learning Engineer", score: 15, reason: "Advanced mathematical pattern recognition logic capabilities.", gaps: ["TensorFlow & PyTorch Libraries", "Deep Neural Networks Scaling", "GPU Optimization Pipelines"] },
+                { name: "UI/UX Designer", score: 15, reason: "Excellent sensory graphic spatial aesthetics and visual design layout concepts.", gaps: ["Figma Interaction Prototyping", "Design System Thinking Principles", "Heuristic Product Usability Testing"] },
+                { name: "QA Tester", score: 20, reason: "Methodical execution workflows and test script compilation tendencies.", gaps: ["Selenium Automation Scripts", "JMeter Load Testing Frameworks", "CI/CD Deployment Pipelines Integration"] },
+                { name: "Cybersecurity Analyst", score: 15, reason: "Strong defensive security architecture monitoring instincts.", gaps: ["Penetration Testing Frameworks", "Wireshark Packet Trace Diagnoses", "SIEM Architecture Protocols Control"] }
+            ];
+
+            // Evaluate specific criteria to compute the custom match index
+            baselineCareers.forEach(c => {
+                // Incorporate marks parameters directly into weight scores
+                c.score += Math.round(sessionProfile.marks * 0.35);
+
+                // Add scores based on technical skills matching the job profile
+                if (c.name === "Software Developer") {
+                    if (sessionProfile.skills.includes("Python") || sessionProfile.skills.includes("Java")) c.score += 20;
+                    if (sessionProfile.skills.includes("JavaScript") || sessionProfile.skills.includes("HTML/CSS")) c.score += 15;
+                    if (sessionProfile.interest === "Development") c.score += 25;
+                }
+                if (c.name === "Data Analyst") {
+                    if (sessionProfile.skills.includes("Data Analytics")) c.score += 25;
+                    if (sessionProfile.skills.includes("SQL")) c.score += 20;
+                    if (sessionProfile.interest === "Data Science") c.score += 25;
+                }
+                if (c.name === "Machine Learning Engineer") {
+                    if (sessionProfile.skills.includes("AI/ML Basics")) c.score += 30;
+                    if (sessionProfile.skills.includes("Python")) c.score += 15;
+                    if (sessionProfile.interest === "Artificial Intelligence" || sessionProfile.interest === "Data Science") c.score += 25;
+                }
+                if (c.name === "UI/UX Designer") {
+                    if (sessionProfile.skills.includes("UI/UX Design")) c.score += 30;
+                    if (sessionProfile.skills.includes("Canva")) c.score += 15;
+                    if (sessionProfile.skills.includes("HTML/CSS")) c.score += 10;
+                    if (sessionProfile.interest === "Design") c.score += 30;
+                }
+                if (c.name === "QA Tester") {
+                    if (sessionProfile.skills.includes("Problem Solving")) c.score += 15;
+                    if (sessionProfile.skills.includes("HTML/CSS") || sessionProfile.skills.includes("JavaScript")) c.score += 15;
+                    if (sessionProfile.interest === "Development") c.score += 15;
+                }
+                if (c.name === "Cybersecurity Analyst") {
+                    if (sessionProfile.skills.includes("Cyber Security")) c.score += 30;
+                    if (sessionProfile.skills.includes("Networking")) c.score += 20;
+                    if (sessionProfile.interest === "Security") c.score += 30;
+                }
+
+                // Apply adjustments based on academic qualification constraints
+                if (sessionProfile.qualification === "MCA" || sessionProfile.qualification === "BTech") c.score += 8;
+
+                // Enforce absolute ceilings check
+                if (c.score > 98) c.score = 98;
+            });
+
+            // Sort profiles to find highest matching metrics paths
+            baselineCareers.sort((x, y) => y.score - x.score);
+
+            // Render top 3 recommendations inside dashboard list nodes
+            let targetTop1 = baselineCareers[0];
+            let targetTop2 = baselineCareers[1];
+            let targetTop3 = baselineCareers[2];
+
+            document.getElementById('career1Title').innerText = targetTop1.name;
+            document.getElementById('career1Pct').innerText = `${targetTop1.score}%`;
+
+            document.getElementById('career2Title').innerText = targetTop2.name;
+            document.getElementById('career2Pct').innerText = `${targetTop2.score}%`;
+
+            document.getElementById('career3Title').innerText = targetTop3.name;
+            document.getElementById('career3Pct').innerText = `${targetTop3.score}%`;
+
+            // Compute dynamic explanation text blocks
+            document.getElementById('explanationText').innerText = `Primary recommendation profile matches ${targetTop1.name} with an engineering certainty matrix score of ${targetTop1.score}%. This path is dynamically mapped out because:`;
+            
+            const expListContainer = document.getElementById('explanationList');
+            expListContainer.innerHTML = ""; // Clear existing lines
+            
+            // Add custom reasoning elements based on current attributes
+            let reasoningBulletPoints = [
+                `Detected strong interest emphasis focusing directly inside the "${sessionProfile.interest}" domain space.`,
+                targetTop1.reason,
+                `Academic grade baseline tracking evaluates structural capabilities at ${sessionProfile.marks}% capability output.`
+            ];
+            reasoningBulletPoints.forEach(pt => {
+                let li = document.createElement('li');
+                li.innerText = pt;
+                expListContainer.appendChild(li);
+            });
+
+            // Calculate skill gaps and render growth steps
+            const gapListContainer = document.getElementById('skillGapList');
+            gapListContainer.innerHTML = ""; // Clear existing lists
+            
+            let combinedGapsArray = [...targetTop1.gaps, ...targetTop2.gaps];
+            // Remove duplicates from array lists smoothly
+            let uniqueGapsList = [...new Set(combinedGapsArray)].slice(0, 4);
+
+            uniqueGapsList.forEach(gap => {
+                let li = document.createElement('li');
+                li.innerText = `To optimize placement as a high-tier ${targetTop1.name}, bridge skill alignment for: ${gap}.`;
+                gapListContainer.appendChild(li);
+            });
+
+            // Re-render Data Visualization Elements via ChartJS Engine Context Loops
+            renderAnalyticalCharts(strengths, baselineCareers.slice(0, 4));
+        }
+
+        /**
+         * ChartJS Engine Graphical Initialization Logic
+         */
+        function renderAnalyticalCharts(skillWeights, calibratedCareers) {
+            const ctxDoughnut = document.getElementById('doughnutChartObj').getContext('2d');
+            const ctxBar = document.getElementById('barChartObj').getContext('2d');
+
+            // Clear previous canvas objects if they exist to prevent hover rendering memory leaks
+            if (chartDoughnutInstance) chartDoughnutInstance.destroy();
+            if (chartBarInstance) chartBarInstance.destroy();
+
+            // Set up Global Chart Styling Context variables matching Client 2 Theme
+            Chart.defaults.color = '#e0e0e0';
+            Chart.defaults.font.family = "'Poppins', sans-serif";
+
+            // 1. Doughnut Chart Implementation
+            chartDoughnutInstance = new Chart(ctxDoughnut, {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        `Programming Core (${skillWeights.programming}%)`,
+                        `Analytical Domain (${skillWeights.analytics}%)`,
+                        `Design Creativity (${skillWeights.design}%)`,
+                        `Communication Skills (${skillWeights.communication}%)`
+                    ],
+                    datasets: [{
+                        data: [skillWeights.programming, skillWeights.analytics, skillWeights.design, skillWeights.communication],
+                        backgroundColor: ['#448aff', '#ff4081', '#00e676', '#ffeb3b'],
+                        borderWidth: 3,
+                        borderColor: '#1a237e'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12, padding: 15, font: { size: 11 } }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+
+            // 2. Bar Chart Implementation
+            chartBarInstance = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: calibratedCareers.map(c => c.name),
+                    datasets: [{
+                        data: calibratedCareers.map(c => c.score),
+                        backgroundColor: ['#00e676', '#00b0ff', '#ff9100', 'rgba(255,255,255,0.2)'],
+                        borderRadius: 8,
+                        barThickness: 30
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: { 
+                            min: 0, 
+                            max: 100, 
+                            grid: { color: 'rgba(255, 255, 255, 0.08)' },
+                            ticks: { font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Reset System Session State Workflow Engine Handler
+         */
+        function resetSystemWorkflow() {
+            // Reset form control structures on all pages
+            document.getElementById('loginForm').reset();
+            document.getElementById('profileForm').reset();
+            
+            // Loop navigation structure back to landing view page
+            switchView('page1');
+        }
+    </script>
+</body>
+</html>
